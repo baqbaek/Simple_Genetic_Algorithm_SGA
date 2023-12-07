@@ -1,11 +1,11 @@
 
-Opis programu - Polski:
+Opis programu - Polski: <br/>
 Program jest prostą implementacją algorytmu genetycznego (SGA - Simple Genetic Algorithm), który ma na celu maksymalizację funkcji kwadratowej zadanej wzorem: 
 
 f(x)=ax2 + bx + c, gdzie 
 x przyjmuje wartości całkowite z zakresu od 0 do 255. Program przyjmuje jako parametry wejściowe współczynniki równania kwadratowego a,b,c, liczbę uruchomień, liczbę populacji, liczbę osobników w populacji, prawdopodobieństwo krzyżowania i prawdopodobieństwo mutacji. Wyniki programu zapisywane są do pliku tekstowego, zawierającego 40 linii, gdzie każda linia przedstawia najlepszego osobnika w ostatniej populacji dla danego uruchomienia.
 
-Description of the Program - English:
+Description of the Program - English: <br/>
 The program is a simple implementation of a genetic algorithm (SGA - Simple Genetic Algorithm) designed to maximize a quadratic function given by the formula: 
 
 f(x)=ax2 + bx + c, where 
