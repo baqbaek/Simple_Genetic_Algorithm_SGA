@@ -26,31 +26,57 @@ def inicjalizuj_populacje(rozmiar_populacji, dlugosc_genotypu):
     return [Osobnik(dlugosc_genotypu) for _ in range(rozmiar_populacji)]
 
 
-def krzyzowanie(rodzic1, rodzic2, prawdopodobienstwo_krzyzowania):
+def krzyzowanie(rodzic1, rodzic2, pr_krzy):
     # Krzyżowanie genotypów rodziców w punkcie przecięcia
-    if random.random() < prawdopodobienstwo_krzyzowania:
+    if random.random() < pr_krzy:
         punkt_krzyzowania = random.randint(0, min(len(rodzic1.genotyp), len(rodzic2.genotyp)) - 1)
         # Zamiana fragmentów genotypów między rodzicami
         rodzic1.genotyp[punkt_krzyzowania:], rodzic2.genotyp[punkt_krzyzowania:] = \
             rodzic2.genotyp[punkt_krzyzowania:], rodzic1.genotyp[punkt_krzyzowania:]
 
 
-def mutacja(osobnik, prawdopodobienstwo_mutacji):
+def mutacja(osobnik, pr_mut):
     # Mutacja genotypu z określonym prawdopodobieństwem
     for i in range(len(osobnik.genotyp)):
-        if random.random() < prawdopodobienstwo_mutacji:
+        if random.random() < pr_mut:
             osobnik.genotyp[i] = 1 - osobnik.genotyp[i]
 
+
 def dostosuj_do_funkcji_ujemnej(populacja, a, b, c):
-    # Dodanie stałej do wartości funkcji celu, aby uniknąć wartości ujemnych
+    # Dodanie stałej do wartości funkcji kwadratowej, aby uniknąć wartości ujemnych
     min_value = min(funkcja_kwadratowa(osobnik, a, b, c) for osobnik in populacja)
     for osobnik in populacja:
         osobnik.wartosc += abs(min_value)
 
+
+def dostosuj_do_funkcji_minimalnej(populacja, a, b, c, minimalna_wartosc):
+    # Dodanie stałej do wartości funkcji kwadratowej, aby uniknąć wartości poniżej minimalnej
+    for osobnik in populacja:
+        osobnik.wartosc += max(0, minimalna_wartosc - funkcja_kwadratowa(osobnik, a, b, c))
+
+
 def selekcja(populacja, a, b, c):
     # Sortowanie populacji według wartości funkcji celu (malejąco)
-    dostosuj_do_funkcji_ujemnej(populacja, a, b, c)
+    dostosuj_do_funkcji_minimalnej(populacja, a, b, c, minimalna_wartosc=125)
     populacja.sort(key=lambda osobnik: funkcja_kwadratowa(osobnik, a, b, c), reverse=True)
+
+    # Zwracanie osobników z populacji z prawdopodobieństwem proporcjonalnym do ich wartości funkcji celu
+    suma_ocen = sum(osobnik.wartosc for osobnik in populacja)
+
+    # Obsługa przypadku, gdy suma wartości funkcji celu wynosi zero
+    if suma_ocen == 0:
+        # Losowe wybieranie osobników bez uwzględniania wag
+        populacja[:] = random.choices(populacja, k=len(populacja))
+    else:
+        # Losowe wybieranie osobników z uwzględnieniem wag proporcjonalnych do wartości funkcji celu
+        wybrane_osobniki = random.choices(
+            populacja,
+            weights=[osobnik.wartosc / suma_ocen for osobnik in populacja],
+            k=len(populacja)
+        )
+
+        # Kopiowanie wybranych osobników z powrotem do populacji
+        populacja[:] = wybrane_osobniki
 
 
 def zapisz_wyniki_do_pliku(plik, osobnik, iteracja):
@@ -67,27 +93,26 @@ def main():
     a = 1
     b = -250
     c = 10000
-    ile_iteracji = 40
-    #y = a * -250x + 10000
+    ile_wyn = 40
+    # y = 1 - 250x + 10000
 
-    liczba_populacji = int(input("Podaj liczbę populacji: "))
-    prawdopodobienstwo_krzyzowania = float(input("Podaj prawdopodobieństwo krzyżowania (0-1): "))
-    prawdopodobienstwo_mutacji = float(input("Podaj prawdopodobieństwo mutacji (0-1): "))
+    lb_pop = int(input("Podaj liczbę populacji: "))
+    pr_krzy = float(input("Podaj prawdopodobieństwo krzyżowania (0-1): "))
+    pr_mut = float(input("Podaj prawdopodobieństwo mutacji (0-1): "))
 
-    populacja = inicjalizuj_populacje(liczba_populacji, 8)
+    populacja = inicjalizuj_populacje(lb_pop, 8)
 
     with open("wyniki_ssi_kubiczek.txt", "w", encoding="utf-8") as plik_wyjsciowy:
-        for iteracja in range(ile_iteracji):
+        for iteracja in range(ile_wyn):
             for osobnik in populacja:
                 osobnik.wartosc = funkcja_kwadratowa(osobnik, a, b, c)
 
             selekcja(populacja, a, b, c)
             zapisz_wyniki_do_pliku(plik_wyjsciowy, populacja[0], iteracja)
 
-            for i in range(0, liczba_populacji - 1, 2):  # Zmiana zakresu pętli
-                krzyzowanie(populacja[i], populacja[i + 1], prawdopodobienstwo_krzyzowania)
-                mutacja(populacja[i], prawdopodobienstwo_mutacji)
-                mutacja(populacja[i + 1], prawdopodobienstwo_mutacji)
+            for i in range(lb_pop):  # Usunięcie niepotrzebnej pętli
+                krzyzowanie(populacja[i], random.choice(populacja), pr_krzy)
+                mutacja(populacja[i], pr_mut)
 
     print(f"Najlepszy osobnik: {''.join(map(str, populacja[0].genotyp))}")
     print(f"Wartość funkcji kwadratowej: {populacja[0].wartosc}")
