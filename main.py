@@ -1,123 +1,117 @@
 import random
 
+# Parametry funkcji kwadratowej
+a = -1
+b = 250
+c = -10000
 
-class Osobnik:
-    def __init__(self, dlugosc_genotypu):
-        # Inicjalizacja genotypu losowymi wartościami z przedziału 1 do 255
-        self.genotyp = [random.choice([0, 1]) for _ in range(dlugosc_genotypu)]
-        while int(''.join(map(str, self.genotyp)), 2) == 0:
-            self.genotyp = [random.choice([0, 1]) for _ in range(dlugosc_genotypu)]
-        self.wartosc = 0  # Wartość funkcji celu dla danego osobnika
+# Funkcja do wypisywania bitów liczby binarnej
+def drukuj_bity(n):
+    bity = 2 * n.bit_length()
+    tmp = [str((n >> i) & 1) for i in range(bity - 1, -1, -1)]
+    print(''.join(tmp))
 
-    def reprezentacja_dziesietna(self):
-        # Reprezentacja dziesiętna genotypu
-        return int(''.join(map(str, self.genotyp)), 2)
+# Funkcja do negacji bitów liczby binarnej
+def odwroc_bity(n):
+    return ~n & ((1 << n.bit_length()) - 1)
 
+# Funkcja generująca losową liczbę z zakresu
+def losowa_liczba(min_val=0, max_val=255):
+    return random.randint(min_val, max_val)
 
-def funkcja_kwadratowa(osobnik, a, b, c):
-    # Konwersja genotypu na liczbę dziesiętną
-    x = int(''.join(map(str, osobnik.genotyp)), 2)
-    # Wartość funkcji celu dla danego osobnika (fun. kwadratowa)
-    return a * x ** 2 + b * x + c
+# Funkcja konwertująca liczbę binarną na dziesiętną
+def binarna_na_dziesietna(binary_string):
+    decimal, i = 0, 0
+    for bit in reversed(binary_string):
+        decimal += int(bit) * (2 ** i)
+        i += 1
+    return decimal
 
+# Funkcja krzyżowania dwóch liczb binarnych
+def krzyzowanie_binarnych(num1, num2, pc):
+    # Określanie liczby bitów dla obu liczb
+    bity = max(num1.bit_length(), num2.bit_length())
+    # Tworzenie listy bitów dla krzyżowania
+    tmp = [str((num1 >> i) & 1) for i in range(max(bity - pc, 0), bity)]
+    tmp.extend([str((num2 >> i) & 1) for i in range(bity - pc - 1, -1, -1)])
+    # Konwersja z powrotem na liczbę dziesiętną
+    num_in_decimal = binarna_na_dziesietna(''.join(tmp))
+    return num_in_decimal
 
-def inicjalizuj_populacje(rozmiar_populacji, dlugosc_genotypu):
-    # Inicjalizacja populacji nowymi osobnikami z genotypami w przedziale 1-255
-    return [Osobnik(dlugosc_genotypu) for _ in range(rozmiar_populacji)]
+# Funkcja kwadratowa
+def funkcja_kwadratowa(x):
+    return a * x**2 + b * x + c
 
+# Funkcja selekcji ruletkowej
+def selekcja_ruletkowa(osoby_lista):
+    # Przesunięcie funkcji kwadratowej w górę, aby uwzględnić wartości ujemne
+    f_suma = sum(funkcja_kwadratowa(x) + 5626 for x in osoby_lista)
 
-def krzyzowanie(rodzic1, rodzic2, pr_krzy):
-    # Krzyżowanie genotypów rodziców w punkcie przecięcia
-    if random.random() < pr_krzy:
-        punkt_krzyzowania = random.randint(0, min(len(rodzic1.genotyp), len(rodzic2.genotyp)) - 1)
-        # Zamiana fragmentów genotypów między rodzicami
-        rodzic1.genotyp[punkt_krzyzowania:], rodzic2.genotyp[punkt_krzyzowania:] = \
-            rodzic2.genotyp[punkt_krzyzowania:], rodzic1.genotyp[punkt_krzyzowania:]
+    # Obliczanie prawdopodobieństwa wyboru każdego osobnika
+    osoby_prawdopodobienstwo_lista = [
+        (funkcja_kwadratowa(x) + 5626) / f_suma for x in osoby_lista
+    ]
 
+    selected = []
+    for _ in range(len(osoby_lista)):
+        random_num = random.random()
+        temp_counter = 0
+        # Wybieranie osobników na podstawie ruletki
+        for i, prob in enumerate(osoby_prawdopodobienstwo_lista):
+            temp_counter += prob
+            if temp_counter > random_num:
+                selected.append(osoby_lista[i])
+                break
 
-def mutacja(osobnik, pr_mut):
-    # Mutacja genotypu z określonym prawdopodobieństwem
-    for i in range(len(osobnik.genotyp)):
-        if random.random() < pr_mut:
-            osobnik.genotyp[i] = 1 - osobnik.genotyp[i]
+    osoby_lista[:] = selected
 
+# Główna funkcja algorytmu genetycznego
+def main(ile_wyn, lb_pop, ile_os, pr_krzyz, pr_mut):
+    najlepsze_wyniki = [0] * ile_wyn
+    plik_wynikowy = open("wyniki.txt", "w")
 
-def dostosuj_do_funkcji_ujemnej(populacja, a, b, c):
-    # Dodanie stałej do wartości funkcji kwadratowej, aby uniknąć wartości ujemnych
-    min_value = min(funkcja_kwadratowa(osobnik, a, b, c) for osobnik in populacja)
-    for osobnik in populacja:
-        osobnik.wartosc += abs(min_value)
+    for uruchomienie_programu in range(ile_wyn):
+        populacja_osobnikow = [losowa_liczba() for _ in range(ile_os)]
 
+        for numer_populacji in range(lb_pop):
+            random.shuffle(populacja_osobnikow)
 
-def dostosuj_do_funkcji_minimalnej(populacja, a, b, c, minimalna_wartosc):
-    # Dodanie stałej do wartości funkcji kwadratowej, aby uniknąć wartości poniżej minimalnej
-    for osobnik in populacja:
-        osobnik.wartosc += max(0, minimalna_wartosc - funkcja_kwadratowa(osobnik, a, b, c))
+            for indeks_pary in range(0, ile_os, 2):
+                # Krzyżowanie z określoną szansą
+                if losowa_liczba(0, 1000) <= pr_krzyz * 1000 and indeks_pary + 1 < len(populacja_osobnikow):
+                    punkt_krzyzowania = losowa_liczba(1, 7)
+                    nowy_osobnik1 = krzyzowanie_binarnych(populacja_osobnikow[indeks_pary], populacja_osobnikow[indeks_pary + 1], punkt_krzyzowania)
+                    nowy_osobnik2 = krzyzowanie_binarnych(populacja_osobnikow[indeks_pary + 1], populacja_osobnikow[indeks_pary], punkt_krzyzowania)
+                    populacja_osobnikow[indeks_pary] = nowy_osobnik1
+                    populacja_osobnikow[indeks_pary + 1] = nowy_osobnik2
 
+                # Mutacja z określoną szansą
+                if losowa_liczba(0, 1000) <= pr_mut * 1000:
+                    populacja_osobnikow[indeks_pary] = odwroc_bity(populacja_osobnikow[indeks_pary])
 
-def selekcja(populacja, a, b, c):
-    # Sortowanie populacji według wartości funkcji celu (malejąco)
-    dostosuj_do_funkcji_minimalnej(populacja, a, b, c, minimalna_wartosc=125)
-    populacja.sort(key=lambda osobnik: funkcja_kwadratowa(osobnik, a, b, c), reverse=True)
+                if losowa_liczba(0, 1000) <= pr_mut * 1000:
+                    populacja_osobnikow[indeks_pary + 1] = odwroc_bity(populacja_osobnikow[indeks_pary + 1])
 
-    # Zwracanie osobników z populacji z prawdopodobieństwem proporcjonalnym do ich wartości funkcji celu
-    suma_ocen = sum(osobnik.wartosc for osobnik in populacja)
+            # Selekcja ruletkowa
+            selekcja_ruletkowa(populacja_osobnikow)
 
-    # Obsługa przypadku, gdy suma wartości funkcji celu wynosi zero
-    if suma_ocen == 0:
-        # Losowe wybieranie osobników bez uwzględniania wag
-        populacja[:] = random.choices(populacja, k=len(populacja))
-    else:
-        # Losowe wybieranie osobników z uwzględnieniem wag proporcjonalnych do wartości funkcji celu
-        wybrane_osobniki = random.choices(
-            populacja,
-            weights=[osobnik.wartosc / suma_ocen for osobnik in populacja],
-            k=len(populacja)
-        )
+        # Zapisywanie wyników do pliku
+        najlepsze_wyniki[uruchomienie_programu] = max(populacja_osobnikow, key=funkcja_kwadratowa)
+        plik_wynikowy.write(f"{funkcja_kwadratowa(najlepsze_wyniki[uruchomienie_programu])}\t  {najlepsze_wyniki[uruchomienie_programu]}\n")
 
-        # Kopiowanie wybranych osobników z powrotem do populacji
-        populacja[:] = wybrane_osobniki
+    # Znajdowanie najlepszego wyniku spośród wszystkich prób
+    najlepszy_wynik_globalny = max(najlepsze_wyniki, key=funkcja_kwadratowa)
+    plik_wynikowy.close()
+    return najlepszy_wynik_globalny
 
-
-def zapisz_wyniki_do_pliku(plik, osobnik, iteracja):
-    # Zapis wyników do pliku tekstowego w reprezentacji binarnej i dziesiętnej
-    genotyp_binarny = ''.join(map(str, osobnik.genotyp))
-    genotyp_dziesietny = osobnik.reprezentacja_dziesietna()
-
-    plik.write(
-        f"Generacja {iteracja + 1}: Genotyp: {genotyp_binarny}({genotyp_dziesietny}) Wartość: {osobnik.wartosc}\n")
-
-
-def main():
-    random.seed()
-    a = 1
-    b = -250
-    c = 10000
-    ile_wyn = 40
-    # y = 1 - 250x + 10000
-
-    lb_pop = int(input("Podaj liczbę populacji: "))
-    pr_krzy = float(input("Podaj prawdopodobieństwo krzyżowania (0-1): "))
-    pr_mut = float(input("Podaj prawdopodobieństwo mutacji (0-1): "))
-
-    populacja = inicjalizuj_populacje(lb_pop, 8)
-
-    with open("wyniki_ssi_kubiczek.txt", "w", encoding="utf-8") as plik_wyjsciowy:
-        for iteracja in range(ile_wyn):
-            for osobnik in populacja:
-                osobnik.wartosc = funkcja_kwadratowa(osobnik, a, b, c)
-
-            selekcja(populacja, a, b, c)
-            zapisz_wyniki_do_pliku(plik_wyjsciowy, populacja[0], iteracja)
-
-            for i in range(lb_pop):  # Usunięcie niepotrzebnej pętli
-                krzyzowanie(populacja[i], random.choice(populacja), pr_krzy)
-                mutacja(populacja[i], pr_mut)
-
-    print(f"Najlepszy osobnik: {''.join(map(str, populacja[0].genotyp))}")
-    print(f"Wartość funkcji kwadratowej: {populacja[0].wartosc}")
-    print(f"Wartość dziesiętna najlepszego osobnika: {populacja[0].reprezentacja_dziesietna()}")
-
-
+# Wywołanie głównej funkcji
 if __name__ == "__main__":
-    main()
+    # Ustawienia parametrów
+    ile_wyn = 40
+    lb_pop = 10
+    ile_os = 12
+    pr_krzyz = 0.8
+    pr_mut = 0.1
+
+    wynik = main(ile_wyn, lb_pop, ile_os, pr_krzyz, pr_mut)
+    print(f"Najlepszy x: {wynik}\nNajlepszy f(x): {funkcja_kwadratowa(wynik)}")
