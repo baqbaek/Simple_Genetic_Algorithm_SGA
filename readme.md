@@ -1,5 +1,5 @@
 
-Opis programu - Polski: <br/>
+<center><b>Opis programu - Polski:</b></center><br/>
 Ten program implementuje algorytm genetyczny w celu znalezienia maksimum funkcji kwadratowej o postaci: f(x) = ax^2 + bx + c. <br/>
 Algorytm genetyczny jest metaheurystyką inspirowaną procesem ewolucji biologicznej, wykorzystującą operacje genetyczne, takie jak krzyżowanie i mutacja, do ewolucji populacji osobników w kierunku optymalnych rozwiązań.
 
@@ -35,7 +35,7 @@ Algorytm genetyczny jest efektywnym narzędziem do rozwiązywania problemów opt
 <br/>
 <hr>
 <br/>
-Program Description - English: <br/>
+<center><b>Program Description - English:</b></center> <br/>
 This program implements a genetic algorithm to find the maximum of a quadratic function of the form: f(x) = ax^2 + bx + c. <br/>
 The genetic algorithm is a metaheuristic inspired by the biological evolution process, utilizing genetic operations such as crossover and mutation to evolve a population of individuals towards optimal solutions.
 
