@@ -1,9 +1,9 @@
 import random
 
 # Parametry funkcji kwadratowej
-a = -1
-b = 250
-c = -10000
+a = 1
+b = -250
+c = 10000
 
 # Funkcja do wypisywania bitów liczby binarnej
 def drukuj_bity(n):
@@ -44,19 +44,32 @@ def funkcja_kwadratowa(x):
 
 # Funkcja selekcji ruletkowej
 def selekcja_ruletkowa(osoby_lista):
-    # Przesunięcie funkcji kwadratowej w górę, aby uwzględnić wartości ujemne
-    f_suma = sum(funkcja_kwadratowa(x) + 5626 for x in osoby_lista)
+    # Sprawdzenie, czy wszystkie wartości funkcji przystosowania są nieujemne
+#   if all(funkcja_kwadratowa(osobnik) >= 0 for osobnik in osoby_lista):
+#        return  # Przerwij selekcję kołem ruletki dla funkcji nieujemnych
 
-    # Obliczanie prawdopodobieństwa wyboru każdego osobnika
+    f_suma = 0
+    wartosc_minimalna = 0
+
+    # Obliczanie minimalnej wartości funkcji kwadratowej w populacji
+    for osobnik in osoby_lista:
+        if funkcja_kwadratowa(osobnik) < wartosc_minimalna:
+            wartosc_minimalna = funkcja_kwadratowa(osobnik)
+
+    # Obliczanie sumy wartości przystosowania
+    for osobnik in osoby_lista:
+        f_suma += (funkcja_kwadratowa(osobnik) - wartosc_minimalna)
+
+    # Obliczanie prawdopodobieństwa selekcji dla każdego osobnika
     osoby_prawdopodobienstwo_lista = [
-        (funkcja_kwadratowa(x) + 5626) / f_suma for x in osoby_lista
+        (funkcja_kwadratowa(osobnik) - wartosc_minimalna) / f_suma for osobnik in osoby_lista
     ]
 
     selected = []
     for _ in range(len(osoby_lista)):
         random_num = random.random()
         temp_counter = 0
-        # Wybieranie osobników na podstawie ruletki
+        # Selekcja ruletkowa
         for i, prob in enumerate(osoby_prawdopodobienstwo_lista):
             temp_counter += prob
             if temp_counter > random_num:
@@ -64,32 +77,38 @@ def selekcja_ruletkowa(osoby_lista):
                 break
 
     osoby_lista[:] = selected
-
 # Główna funkcja algorytmu genetycznego
 def main(ile_wyn, lb_pop, ile_os, pr_krzyz, pr_mut):
     najlepsze_wyniki = [0] * ile_wyn
     plik_wynikowy = open("wyniki.txt", "w")
 
     for uruchomienie_programu in range(ile_wyn):
+        # Inicjalizacja populacji losowymi osobnikami
         populacja_osobnikow = [losowa_liczba() for _ in range(ile_os)]
 
         for numer_populacji in range(lb_pop):
+            # Przetasowanie populacji
             random.shuffle(populacja_osobnikow)
 
             for indeks_pary in range(0, ile_os, 2):
                 # Krzyżowanie z określoną szansą
                 if losowa_liczba(0, 1000) <= pr_krzyz * 1000 and indeks_pary + 1 < len(populacja_osobnikow):
+                    # Losowanie punktu krzyżowania
                     punkt_krzyzowania = losowa_liczba(1, 7)
+                    # Wywołanie funkcji krzyżowania
                     nowy_osobnik1 = krzyzowanie_binarnych(populacja_osobnikow[indeks_pary], populacja_osobnikow[indeks_pary + 1], punkt_krzyzowania)
                     nowy_osobnik2 = krzyzowanie_binarnych(populacja_osobnikow[indeks_pary + 1], populacja_osobnikow[indeks_pary], punkt_krzyzowania)
+                    # Aktualizacja populacji (nadpisanie istniejących osobników)
                     populacja_osobnikow[indeks_pary] = nowy_osobnik1
                     populacja_osobnikow[indeks_pary + 1] = nowy_osobnik2
 
                 # Mutacja z określoną szansą
                 if losowa_liczba(0, 1000) <= pr_mut * 1000:
+                    # Mutacja pierwszego osobnika w parze
                     populacja_osobnikow[indeks_pary] = odwroc_bity(populacja_osobnikow[indeks_pary])
 
                 if losowa_liczba(0, 1000) <= pr_mut * 1000:
+                    # Mutacja drugiego osobnika w parze
                     populacja_osobnikow[indeks_pary + 1] = odwroc_bity(populacja_osobnikow[indeks_pary + 1])
 
             # Selekcja ruletkowa
@@ -107,11 +126,11 @@ def main(ile_wyn, lb_pop, ile_os, pr_krzyz, pr_mut):
 # Wywołanie głównej funkcji
 if __name__ == "__main__":
     # Ustawienia parametrów
-    ile_wyn = 40
-    lb_pop = 10
-    ile_os = 12
-    pr_krzyz = 0.8
-    pr_mut = 0.1
+    ile_wyn = 40  # Liczba powtórzeń algorytmu genetycznego
+    lb_pop = 10  # Liczba populacji
+    ile_os = 12  # Liczba osobników w populacji
+    pr_krzyz = 0.7  # Prawdopodobieństwo krzyżowania
+    pr_mut = 0.2  # Prawdopodobieństwo mutacji
 
     wynik = main(ile_wyn, lb_pop, ile_os, pr_krzyz, pr_mut)
     print(f"Najlepszy x: {wynik}\nNajlepszy f(x): {funkcja_kwadratowa(wynik)}")
